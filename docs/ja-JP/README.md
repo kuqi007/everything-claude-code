@@ -1,4 +1,4 @@
-**言語:** English | [简体中文](../../README.zh-CN.md) | [繁體中文](docs/zh-TW/README.md) | [日本語](docs/ja-JP/README.md)
+**言語:** English | [简体中文](../../README.zh-CN.md) | [繁體中文](../zh-TW/README.md) | [日本語](README.md) | [한국어](../ko-KR/README.md)
 
 # Everything Claude Code
 
@@ -409,7 +409,7 @@ claude --version
 Claude Code v2.1+は、インストール済みプラグインの`hooks/hooks.json`（規約）を自動読み込みします。`plugin.json`で明示的に宣言するとエラーが発生します：
 
 ```
-Duplicate hooks file detected: ./hooks/hooks.json resolves to already-loaded file
+Duplicate hook file detected: ./hooks/hooks.json is already resolved to a loaded file
 ```
 
 **背景:** これは本リポジトリで複数の修正/リバート循環を引き起こしました（[#29](https://github.com/affaan-m/everything-claude-code/issues/29), [#52](https://github.com/affaan-m/everything-claude-code/issues/52), [#103](https://github.com/affaan-m/everything-claude-code/issues/103)）。Claude Codeバージョン間で動作が変わったため混乱がありました。今後を防ぐため回帰テストがあります。
