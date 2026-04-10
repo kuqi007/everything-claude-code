@@ -16,6 +16,10 @@ Automatically evaluates Claude Code sessions on end to extract reusable patterns
 - Adjusting extraction thresholds or pattern categories
 - Comparing v1 (this) vs v2 (instinct-based) approaches
 
+## Status
+
+This v1 skill is still supported, but `continuous-learning-v2` is the preferred path for new installs. Keep v1 when you explicitly want the simpler Stop-hook extraction flow or need compatibility with older learned-skill workflows.
+
 ## How It Works
 
 This skill runs as a **Stop hook** at the end of each session:
@@ -116,4 +120,4 @@ Homunculus v2 takes a more sophisticated approach:
 4. **Domain tagging** - code-style, testing, git, debugging, etc.
 5. **Evolution path** - Cluster related instincts into skills/commands
 
-See: `/Users/affoon/Documents/tasks/12-continuous-learning-v2.md` for full spec.
+See: `docs/continuous-learning-v2-spec.md` for full spec.

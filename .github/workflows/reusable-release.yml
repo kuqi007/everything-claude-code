@@ -23,37 +23,47 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify OpenCode package payload
+        run: node tests/scripts/build-opencode.test.js
+
       - name: Validate version tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if ! [[ "${{ inputs.tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if ! [[ "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version tag format. Expected vX.Y.Z"
             exit 1
           fi
 
-      - name: Generate changelog
-        id: changelog
+      - name: Generate release highlights
+        env:
+          TAG_NAME: ${{ inputs.tag }}
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -z "$PREV_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s" HEAD)
-          else
-            COMMITS=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD)
-          fi
-          # Use unique delimiter to prevent truncation if commit messages contain EOF
-          DELIMITER="COMMITS_END_$(date +%s)"
-          echo "commits<<${DELIMITER}" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "${DELIMITER}" >> $GITHUB_OUTPUT
+          TAG_VERSION="${TAG_NAME#v}"
+          cat > release_body.md <<EOF
+          ## ECC ${TAG_VERSION}
+
+          ### What This Release Focuses On
+          - Harness reliability and cross-platform compatibility
+          - Eval-driven quality improvements
+          - Better workflow and operator ergonomics
+          EOF
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           tag_name: ${{ inputs.tag }}
-          body: |
-            ## Changes
-            ${{ steps.changelog.outputs.commits }}
+          body_path: release_body.md
           generate_release_notes: ${{ inputs.generate-notes }}
