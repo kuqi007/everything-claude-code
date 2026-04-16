@@ -16,6 +16,22 @@ User request → Claude picks a tool → PreToolUse hook runs → Tool executes 
 
 ## Hooks in This Plugin
 
+## Installing These Hooks Manually
+
+For Claude Code manual installs, do not paste the raw repo `hooks.json` into `~/.claude/settings.json` or copy it directly into `~/.claude/hooks/hooks.json`. The checked-in file is plugin/repo-oriented and is meant to be installed through the ECC installer or loaded as a plugin.
+
+Use the installer instead so hook commands are rewritten against your actual Claude root:
+
+```bash
+bash ./install.sh --target claude --modules hooks-runtime
+```
+
+```powershell
+pwsh -File .\install.ps1 --target claude --modules hooks-runtime
+```
+
+That installs resolved hooks to `~/.claude/hooks/hooks.json`. On Windows, the Claude config root is `%USERPROFILE%\\.claude`.
+
 ### PreToolUse Hooks
 
 | Hook | Matcher | Behavior | Exit Code |
@@ -23,6 +39,7 @@ User request → Claude picks a tool → PreToolUse hook runs → Tool executes 
 | **Dev server blocker** | `Bash` | Blocks `npm run dev` etc. outside tmux — ensures log access | 2 (blocks) |
 | **Tmux reminder** | `Bash` | Suggests tmux for long-running commands (npm test, cargo build, docker) | 0 (warns) |
 | **Git push reminder** | `Bash` | Reminds to review changes before `git push` | 0 (warns) |
+| **Pre-commit quality check** | `Bash` | Runs quality checks before `git commit`: lints staged files, validates commit message format when provided via `-m/--message`, detects console.log/debugger/secrets | 2 (blocks critical) / 0 (warns) |
 | **Doc file warning** | `Write` | Warns about non-standard `.md`/`.txt` files (allows README, CLAUDE, CONTRIBUTING, CHANGELOG, LICENSE, SKILL, docs/, skills/); cross-platform path handling | 0 (warns) |
 | **Strategic compact** | `Edit\|Write` | Suggests manual `/compact` at logical intervals (every ~50 tool calls) | 0 (warns) |
 
@@ -32,6 +49,8 @@ User request → Claude picks a tool → PreToolUse hook runs → Tool executes 
 |------|---------|-------------|
 | **PR logger** | `Bash` | Logs PR URL and review command after `gh pr create` |
 | **Build analysis** | `Bash` | Background analysis after build commands (async, non-blocking) |
+| **Quality gate** | `Edit\|Write\|MultiEdit` | Runs fast quality checks after edits |
+| **Design quality check** | `Edit\|Write\|MultiEdit` | Warns when frontend edits drift toward generic template-looking UI |
 | **Prettier format** | `Edit` | Auto-formats JS/TS files with Prettier after edits |
 | **TypeScript check** | `Edit` | Runs `tsc --noEmit` after editing `.ts`/`.tsx` files |
 | **console.log warning** | `Edit` | Warns about `console.log` statements in edited files |
@@ -43,8 +62,11 @@ User request → Claude picks a tool → PreToolUse hook runs → Tool executes 
 | **Session start** | `SessionStart` | Loads previous context and detects package manager |
 | **Pre-compact** | `PreCompact` | Saves state before context compaction |
 | **Console.log audit** | `Stop` | Checks all modified files for `console.log` after each response |
-| **Session end** | `SessionEnd` | Persists session state for next session |
-| **Pattern extraction** | `SessionEnd` | Evaluates session for extractable patterns (continuous learning) |
+| **Session summary** | `Stop` | Persists session state when transcript path is available |
+| **Pattern extraction** | `Stop` | Evaluates session for extractable patterns (continuous learning) |
+| **Cost tracker** | `Stop` | Emits lightweight run-cost telemetry markers |
+| **Desktop notify** | `Stop` | Sends macOS desktop notification with task summary (standard+) |
+| **Session end marker** | `SessionEnd` | Lifecycle marker and cleanup log |
 
 ## Customizing Hooks
 
@@ -65,6 +87,23 @@ Remove or comment out the hook entry in `hooks.json`. If installed as a plugin, 
   }
 }
 ```
+
+### Runtime Hook Controls (Recommended)
+
+Use environment variables to control hook behavior without editing `hooks.json`:
+
+```bash
+# minimal | standard | strict (default: standard)
+export ECC_HOOK_PROFILE=standard
+
+# Disable specific hook IDs (comma-separated)
+export ECC_DISABLED_HOOKS="pre:bash:tmux-reminder,post:edit:typecheck"
+```
+
+Profiles:
+- `minimal` — keep essential lifecycle and safety hooks only.
+- `standard` — default; balanced quality + safety checks.
+- `strict` — enables additional reminders and stricter guardrails.
 
 ### Writing Your Own Hook
 
@@ -189,7 +228,7 @@ Async hooks run in the background. They cannot block tool execution.
 
 ## Cross-Platform Notes
 
-All hooks in this plugin use Node.js (`node -e` or `node script.js`) for maximum compatibility across Windows, macOS, and Linux. Avoid bash-specific syntax in hooks.
+Hook logic is implemented in Node.js scripts for cross-platform behavior on Windows, macOS, and Linux. A small number of shell wrappers are retained for continuous-learning observer hooks; those wrappers are profile-gated and have Windows-safe fallback behavior.
 
 ## Related
 
